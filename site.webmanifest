@@ -1,0 +1,13 @@
+{
+  "name": "Spax",
+  "short_name": "Spax",
+  "description": "Cuidado integral para la salud y belleza de tu piel.",
+  "icons": [
+    { "src": "/favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#24544B",
+  "background_color": "#FEF7F8",
+  "display": "standalone",
+  "start_url": "/"
+}
