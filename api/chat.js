@@ -8,8 +8,11 @@
 // existir un archivo dentro de /api). No requiere dependencias ni build step.
 // ============================================================================
 
-const GEMINI_MODEL = 'gemini-3.5-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// Se intenta primero con el modelo más reciente; si falla (por ejemplo, por
+// saturación temporal — error 503 "high demand" del lado de Google), se
+// reintenta automáticamente con un modelo más estable como respaldo.
+const MODELS_TO_TRY = ['gemini-3.5-flash', 'gemini-2.5-flash'];
+const RETRY_DELAY_MS = 700;
 
 // Contexto de negocio + reglas de comportamiento del asistente.
 // Edita este bloque para adaptar el chatbot a otro cliente/proyecto.
@@ -36,6 +39,22 @@ REGLAS DE COMPORTAMIENTO:
 
 const MAX_MESSAGE_LENGTH = 1000;
 const MAX_HISTORY_TURNS = 10;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function callGemini(model, apiKey, requestBody) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
+    body: JSON.stringify(requestBody),
+  });
+}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -70,27 +89,39 @@ module.exports = async (req, res) => {
     { role: 'user', parts: [{ text: message.trim() }] },
   ];
 
+  const requestBody = {
+    contents,
+    systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+    generationConfig: {
+      temperature: 0.6,
+      maxOutputTokens: 300,
+    },
+  };
+
   try {
-    const geminiResponse = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 300,
-        },
-      }),
-    });
+    let geminiResponse;
+    let lastErrorText = '';
+
+    for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+      const model = MODELS_TO_TRY[i];
+      geminiResponse = await callGemini(model, apiKey, requestBody);
+
+      if (geminiResponse.ok) break;
+
+      lastErrorText = await geminiResponse.text();
+      console.error(`[api/chat] Error con modelo "${model}":`, geminiResponse.status, lastErrorText);
+
+      const hayOtroModeloQueProbar = i < MODELS_TO_TRY.length - 1;
+      if (hayOtroModeloQueProbar) await sleep(RETRY_DELAY_MS);
+    }
 
     if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      console.error('[api/chat] Error de Gemini API:', geminiResponse.status, errText);
-      return res.status(502).json({ error: 'No se pudo contactar al asistente de IA. Intenta de nuevo en unos segundos.' });
+      const saturado = lastErrorText.includes('UNAVAILABLE') || lastErrorText.includes('high demand');
+      return res.status(502).json({
+        error: saturado
+          ? 'El asistente de IA está recibiendo mucha demanda en este momento. Por favor intenta de nuevo en uno o dos minutos.'
+          : 'No se pudo contactar al asistente de IA. Intenta de nuevo en unos segundos.',
+      });
     }
 
     const data = await geminiResponse.json();
