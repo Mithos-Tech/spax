@@ -39,6 +39,7 @@
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/chatbot.css">
 
 <!-- Datos estructurados para SEO local -->
 <script type="application/ld+json">
@@ -684,6 +685,36 @@
   </div>
 </footer>
 
+<!-- ===================== ASISTENTE VIRTUAL — Chatbot IA (Gemini) ===================== -->
+<div id="spax-chatbot">
+  <button id="spax-chat-toggle" class="spax-chat-toggle" aria-label="Abrir chat de asistencia" aria-expanded="false">
+    <svg class="spax-icon-chat" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 11.5c0 4.69-4.03 8.5-9 8.5-1.06 0-2.07-.16-3-.46L3 21l1.6-4.18C3.59 15.4 3 13.52 3 11.5 3 6.81 7.03 3 12 3s9 3.81 9 8.5Z" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <svg class="spax-icon-close" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 6l12 12M18 6 6 18" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <div id="spax-chat-window" class="spax-chat-window">
+    <div class="spax-chat-header">
+      <div>
+        <strong>Asistente Spax</strong>
+        <span>En línea · Respuestas con IA</span>
+      </div>
+      <button id="spax-chat-close" class="spax-chat-close" aria-label="Cerrar chat">&times;</button>
+    </div>
+    <div id="spax-chat-messages" class="spax-chat-messages" role="log" aria-live="polite"></div>
+    <form id="spax-chat-form" class="spax-chat-form">
+      <input type="text" id="spax-chat-input" placeholder="Escribe tu pregunta..." maxlength="500" autocomplete="off" required>
+      <button type="submit" aria-label="Enviar mensaje">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11.5 21 3l-7.5 18-3-7.5L3 11.5Z" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
 <script src="js/script.js"></script>
+<script src="js/chatbot.js" defer></script>
 </body>
 </html>

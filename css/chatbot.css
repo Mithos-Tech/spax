@@ -1,0 +1,287 @@
+/* ==========================================================================
+   SPAX — Asistente virtual (chatbot IA con Gemini)
+   Reutiliza las variables de marca definidas en css/style.css (:root)
+   ========================================================================== */
+
+#spax-chatbot{
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1002; /* por encima del menú móvil (999) y del header (1000) */
+  font-family: var(--font-body);
+}
+
+/* ---------- Botón flotante ---------- */
+.spax-chat-toggle{
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  /* sombra en dos capas: contacto cercano + ambiente suave (look "premium") */
+  box-shadow: 0 2px 4px rgba(23,58,51,.18), var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .25s ease, box-shadow .25s ease;
+  position: relative;
+}
+.spax-chat-toggle:hover{
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 4px 10px rgba(23,58,51,.22), var(--shadow-soft);
+}
+.spax-chat-toggle:focus-visible{ outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+
+.spax-chat-toggle::after{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border-radius:50%;
+  border:2px solid var(--accent);
+  opacity:.55;
+  animation: spax-pulse 2.6s ease-out infinite;
+}
+@keyframes spax-pulse{
+  0%{ transform: scale(1); opacity:.55; }
+  70%{ transform: scale(1.35); opacity:0; }
+  100%{ transform: scale(1.35); opacity:0; }
+}
+
+/* Iconos del botón: superpuestos y centrados, con crossfade + rotación sutil
+   en vez del display:none/block instantáneo de antes. */
+.spax-chat-toggle svg{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  opacity: 1;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.spax-chat-toggle .spax-icon-close{
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.5) rotate(-45deg);
+}
+.spax-chat-toggle[aria-expanded="true"] .spax-icon-chat{
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.5) rotate(45deg);
+}
+.spax-chat-toggle[aria-expanded="true"] .spax-icon-close{
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+}
+
+/* ---------- Ventana del chat ---------- */
+.spax-chat-window{
+  position: absolute;
+  right: 0;
+  bottom: 76px;
+  width: 340px;
+  max-height: min(calc(100vh - 120px), 520px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  /* sombra en capas: línea de contacto + sombra ambiental amplia */
+  box-shadow: 0 1px 2px rgba(23,58,51,.06), var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Oculto por defecto vía opacidad/transform (no display), para poder
+     animar también el cierre con una transición suave en ambas direcciones.
+     pointer-events:none evita que el panel invisible siga siendo clickeable. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px) scale(.97);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease, visibility .22s;
+  transform-origin: bottom right;
+}
+.spax-chat-window.is-open{
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.spax-chat-header{
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 16px 18px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08); /* separa el header de los mensajes */
+}
+.spax-chat-header strong{
+  font-family: var(--font-display);
+  font-size: 16px;
+  display:block;
+}
+.spax-chat-header span{
+  font-size: 12px;
+  opacity:.85;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.spax-chat-header span::before{
+  content:"";
+  width:6px; height:6px;
+  border-radius:50%;
+  background:#7CE8B6;
+  display:inline-block;
+}
+.spax-chat-close{
+  background: transparent;
+  border: none;
+  color: var(--on-accent);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.spax-chat-close:hover{ opacity:.8; transform: scale(1.1); }
+.spax-chat-close:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
+
+.spax-chat-messages{
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--container-bg);
+}
+.spax-chat-messages::-webkit-scrollbar{ width: 6px; }
+.spax-chat-messages::-webkit-scrollbar-thumb{ background: var(--accent-soft); border-radius: 999px; }
+
+/* ---------- Filas de mensaje (avatar + burbuja) ---------- */
+.spax-row{
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  animation: spax-msg-in .25s ease-out;
+}
+.spax-row-model{ justify-content: flex-start; }
+.spax-row-user{ justify-content: flex-end; }
+
+.spax-avatar{
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(23,58,51,.28);
+}
+.spax-avatar svg{ width: 14px; height: 14px; }
+
+.spax-msg{
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.spax-msg-model{
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(23,58,51,.05);
+}
+.spax-msg-user{
+  background: var(--accent);
+  color: var(--on-accent);
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 6px rgba(23,58,51,.18);
+}
+
+@keyframes spax-msg-in{
+  from{ opacity: 0; transform: translateY(6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+.spax-typing{ display:flex; gap:4px; align-items:center; padding: 12px 14px; }
+.spax-typing span{
+  width:6px; height:6px;
+  border-radius:50%;
+  background: var(--text-muted);
+  opacity:.6;
+  animation: spax-blink 1.2s infinite ease-in-out;
+}
+.spax-typing span:nth-child(2){ animation-delay: .15s; }
+.spax-typing span:nth-child(3){ animation-delay: .3s; }
+@keyframes spax-blink{
+  0%, 80%, 100%{ opacity:.25; transform: translateY(0); }
+  40%{ opacity:.9; transform: translateY(-2px); }
+}
+
+.spax-chat-form{
+  display:flex;
+  gap:8px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.spax-chat-form input{
+  flex:1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 10px 16px;
+  font-family: var(--font-body);
+  font-size: 16px; /* >=16px evita el zoom automático de Safari/iOS al enfocar */
+  color: var(--text);
+  background:#fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.spax-chat-form input:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.spax-chat-form button{
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  border:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  box-shadow: 0 2px 5px rgba(23,58,51,.2);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.spax-chat-form button:hover{ transform: scale(1.06); }
+.spax-chat-form button:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+/* ---------- Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce){
+  .spax-chat-toggle::after{ animation: none; }
+  .spax-chat-window{ transition: opacity .12s linear; transform: none !important; }
+  .spax-row{ animation: none; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px){
+  #spax-chatbot{ right: 14px; bottom: 14px; }
+  .spax-chat-window{
+    width: calc(100vw - 28px);
+    right: -8px;
+    max-height: 76vh;
+  }
+}
