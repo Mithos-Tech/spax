@@ -130,6 +130,7 @@ p{ margin:0; color: var(--text-muted); line-height:1.7; }
   transition: border-radius 0.3s ease, background-color 0.3s ease, padding 0.3s ease;
 }
 .logo{ display:flex; align-items:center; gap:10px; font-family: var(--font-display); font-size: 20px; color: var(--accent); }
+.logo img{ height:36px; width:auto; display:block; }
 .logo .logo-mark{
   width:34px; height:34px; border-radius:50%;
   background: var(--accent); color:#fff;
